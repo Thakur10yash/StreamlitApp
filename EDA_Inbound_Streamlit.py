@@ -9,7 +9,7 @@ import numpy as np
 #df_in=pd.read_excel('/Users/yashthakur/Desktop/Streamlit/Cargosoft-Data_2022-2024.xlsx')
 inbound_data= pd.read_csv('inbound_all.csv')
 #Master_data=pd.read_csv('EXPORT 05.01.2024.XLSX - Sheet1.csv')
-cargosoft_data=pd.read_csv('Cargosoft_and_cost.csv')
+cargosoft_data=pd.read_excel('Cargosoft_and_cost.xlsx')
 cargosoft_data['Cost per Package']=round(cargosoft_data['Costs']/cargosoft_data['Packages'],2)
 #inbound_data=inbound_data[(inbound_data['year']==2023)]
 
