@@ -14,6 +14,7 @@ cargosoft_data=pd.read_csv('Cargosoft_and_cost.csv')
 cargosoft_data['Cost per Package']=round(cargosoft_data['Costs']/cargosoft_data['Packages'],2)
 #inbound_data=inbound_data[(inbound_data['year']==2023)]
 
+
 ####################### ABC/XYZ analysis data loading ###############
 import zipfile
 
