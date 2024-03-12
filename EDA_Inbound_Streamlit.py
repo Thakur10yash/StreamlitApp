@@ -2,7 +2,6 @@
 import streamlit as st
 #from EDA_Inbound_Streamlit_utility import plt_2
 import plotly.express as px
-#import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
@@ -114,7 +113,6 @@ def plot_abc_xyz(percent_inbound):
 #df_in=df_in[df_in['year']>=2022]
 #print(df_in)
 
-import matplotlib.pyplot as plt
 
 def plot_histo_2(df, place_of_loading, place_of_delivery, cost_or_pallets='Packages',Year='2023'):
     data1=df[df['year']==Year]
