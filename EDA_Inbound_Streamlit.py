@@ -2,6 +2,7 @@
 import streamlit as st
 #from EDA_Inbound_Streamlit_utility import plt_2
 import plotly.express as px
+#import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
@@ -9,9 +10,7 @@ import numpy as np
 #df_in=pd.read_excel('/Users/yashthakur/Desktop/Streamlit/Cargosoft-Data_2022-2024.xlsx')
 inbound_data= pd.read_csv('inbound_all.csv')
 #Master_data=pd.read_csv('EXPORT 05.01.2024.XLSX - Sheet1.csv')
-cargosoft_data=pd.read_csv('Cargosoft_and_cost.csv')
-cargosoft_data['Creation Date'] = pd.to_datetime(cargosoft_data['Creation Date'])
-
+cargosoft_data=pd.read_excel('Cargosoft_and_cost.xlsx')
 cargosoft_data['Cost per Package']=round(cargosoft_data['Costs']/cargosoft_data['Packages'],2)
 #inbound_data=inbound_data[(inbound_data['year']==2023)]
 
@@ -24,37 +23,44 @@ import zipfile
 
 # Open the ZIP file
 
-# outbound = pd.read_csv('outbound_final_compresed.csv')
+outbound = pd.read_csv('outbound_final_compresed.csv')
 
 # outbound['PKT real']=outbound['PKT real'].round().astype(int)
 # outbound['Material']=outbound['Material'].astype(str)
 def create_percentile_bins(df, column_name,n, bin_labels=None):
-
+    """
+    Adds a new column to the DataFrame categorizing the specified column into percentile bins.
+    
+    Parameters:
+    - df: pandas DataFrame.
+    - column_name: String. The name of the column to bin.
+    - n: Integer. Number of bins excluding the top bin.
+    - bin_labels: List of strings. Labels for the bins.
+    
+    Returns:
+    - DataFrame with a new column 'percentile_bin'.
+    """
     # Ensure the column exists in the DataFrame
     if column_name not in df.columns:
         raise ValueError(f"Column '{column_name}' not found in DataFrame.")
     
-    # Generate default bin labels if not provided
-    if bin_labels is None:
-        bin_labels = [f'{i+1}0th percentile' for i in range(n)]
-    
     # Calculate percentiles
-    percentiles = [i/10 for i in range(1, n)]
-    percentile_values = df[column_name].quantile(percentiles)
-    # Define bins
+    top_percentile = 0.2
+    top_value = df[column_name].quantile(1 - top_percentile)
+    remaining_percentiles = [(i + 1) / (n + 1) for i in range(n-1)]
+    remaining_values = df[column_name][df[column_name] <= top_value].quantile(remaining_percentiles)
 
-    #cc = np.concatenate(percentile_values['sum'].values)
+    # Combine top bin and remaining bins
+    bins = [df[column_name].min() - 1] + remaining_values.tolist() + [df[column_name].max()]
 
-    bins = [df[column_name].min() - 1] + percentile_values.tolist() + [df[column_name].max()]
-    
     # Use pd.cut to categorize the values into bins
-    df['percentile_bin'] = pd.cut(df[column_name], bins=bins, labels=bin_labels, include_lowest=True)
+    df['percentile_bin'] = pd.cut(df[column_name], bins=bins, labels=[f'Bucket {i}' for i in range(n,0,-1)], include_lowest=True)
     
     return df
 #print(outbound['StandardDeviation'].min(),outbound['StandardDeviation'].max())
 #def plot_abc_xyz(outbound,n):
     
-    return
+    
 #inbound_data.head(1)
 def plot_abc_xyz(percent_inbound):
     field1='percentile_bin'
@@ -96,8 +102,8 @@ def plot_abc_xyz(percent_inbound):
         template='plotly_white',
         xaxis=dict(ticks='', nticks=len(percent_inbound.columns)),
         yaxis=dict(ticks='', nticks=len(percent_inbound[field1])),  # Adjust the number of y-axis ticks to exclude the last row
-        xaxis_title=field2,
-        yaxis_title=field1,
+        xaxis_title='Demand Variability',
+        yaxis_title='Percentile Bins',
         width=790
 
 
@@ -115,6 +121,7 @@ def plot_abc_xyz(percent_inbound):
 #df_in=df_in[df_in['year']>=2022]
 #print(df_in)
 
+import matplotlib.pyplot as plt
 
 def plot_histo_2(df, place_of_loading, place_of_delivery, cost_or_pallets='Packages',Year='2023'):
     data1=df[df['year']==Year]
@@ -428,63 +435,68 @@ def main():
 
         plot_heatmap_cost(cargosoft_data[cargosoft_data['year']==year],filed1,filed2,values_field1,values_field2,metric=metric)
         plot_heatmap_mean_cost(cargosoft_data[cargosoft_data['year']==year],filed1,filed2,values_field1,values_field2,metric='Cost per Package')
-    # if page == "ABC/XYZ on Outbound Data":
-    #     st.header("ABC/XYZ Anlysis")
-    #     col_y, col_p = st.columns(2)
-    #     with col_y:
-    #         st.write('Year')
-    #         options = cargosoft_data['year'].unique()
-    #         year = st.multiselect(
-    #             label='Select your options',
-    #             options=options,
-    #             default=[2022,2023,2024]  # You can set default selections here
-    #         )
-    #     with col_p:
-    #         st.write('No. of Percentile bins')
-    #         #options=cargosoft_data['Type of Loading'].unique()
-    #         options=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-    #         bin_size=st.selectbox(
-    #             label='Select your options',
-    #             options=options,
-    #             index=4
-    #             #default=['Palletized']
-    #         )
-    #     outbound=pd.read_csv('outbound_final.csv')
-    #     outbound['PKT real']=outbound['PKT real'].round().astype(int)
-    #     outbound['Material']=outbound['Material'].astype(str)
-    #     outbound=outbound[outbound['year'].isin(year)]
-    #     outbound['StandardDeviation'] = outbound.groupby('Material')['PKT real'].transform('std')
-    #     outbound_by_Material_2 = outbound.groupby(['Material']).agg({'PKT real':'sum', 'StandardDeviation':'mean'}).reset_index()
-    #     outbound_by_Material_2=create_percentile_bins(outbound_by_Material_2,'PKT real',bin_size)
-    #     outbound_by_Material_2['Percent']=round((outbound_by_Material_2['PKT real']/sum(outbound_by_Material_2['PKT real']))*100,2)
-    #     outbound_by_Material_2=outbound_by_Material_2.sort_values(by=('Percent'),ascending=False)
-    #     outbound_by_Material_2['StandardDeviation']=round(outbound_by_Material_2['StandardDeviation'],2)
-    #     bins = [0, 100, 200, float('inf')]  # Define the bin edges
-    #     labels = ['Low', 'Medium', 'High']  # Define the labels for each bin
-    #     # Add a new column with labels based on the value range of 'Values'
-    #     outbound_by_Material_2['Standard Deviation'] = pd.cut(outbound_by_Material_2['StandardDeviation'], bins=bins, labels=labels, right=False)
-    #     grouped_data2 = outbound_by_Material_2.groupby(['percentile_bin','Standard Deviation'])['PKT real'].sum().reset_index()
-    #     grouped_data2['percentage_sales']=round((grouped_data2['PKT real']/sum(grouped_data2['PKT real']))*100,2)
-    #     grouped_data2['Rank'] = grouped_data2['percentage_sales'].rank(ascending=False)
-    #     grouped_data2=grouped_data2.sort_values(by=['percentage_sales'],ascending=True)
-    #     #grouped_data2 = grouped_percentil.groupby(['percentile_bin','Standard Deviation'])['PKT real'].sum().reset_index()
-    #     metric_use='percentage_sales'
-    #     field1_use='percentile_bin'
-    #     field2_use='Standard Deviation_'
+    if page == "ABC/XYZ on Outbound Data":
+        st.header("ABC/XYZ Anlysis")
+        col_y, col_p = st.columns(2)
+        with col_y:
+            st.write('Year')
+            options = cargosoft_data['year'].unique()
+            year = st.multiselect(
+                label='Select your options',
+                options=options,
+                default=[2022,2023,2024]  # You can set default selections here
+            )
+        with col_p:
+            st.write('No. of Percentile bins')
+            #options=cargosoft_data['Type of Loading'].unique()
+            options=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+            bin_size=st.selectbox(
+                label='Select your options',
+                options=options,
+                index=2
+                #default=['Palletized']
+            )
+        outbound=pd.read_csv('outbound_final_compresed.csv')
+        outbound['Material']=outbound['Material_']
+        outbound['PKT real']=outbound['PKT real_sum']
+        outbound['StandardDeviation']=outbound['StandardDeviation_mean']
+        #outbound['StandardDeviation'] = outbound.groupby('Material')['PKT real'].transform('std')
+        #outbound['Material']=outbound['Material_']
+        outbound['year']=outbound['year_']
+        outbound=outbound[outbound['year'].isin(year)]
+        
+        #outbound['StandardDeviation'] = outbound.groupby('Material')['PKT real'].transform('std')
+        outbound_by_Material_2 = outbound.groupby(['Material']).agg({'PKT real':'sum', 'StandardDeviation':'mean'}).reset_index()
+        outbound_by_Material_2=create_percentile_bins(outbound_by_Material_2,'PKT real',bin_size)
+        outbound_by_Material_2['Percent']=round((outbound_by_Material_2['PKT real']/sum(outbound_by_Material_2['PKT real']))*100,2)
+        outbound_by_Material_2=outbound_by_Material_2.sort_values(by=('Percent'),ascending=False)
+        outbound_by_Material_2['StandardDeviation']=round(outbound_by_Material_2['StandardDeviation'],2)
+        bins = [0, 100, 200, float('inf')]  # Define the bin edges
+        labels = ['Low', 'Medium', 'High']  # Define the labels for each bin
+        # Add a new column with labels based on the value range of 'Values'
+        outbound_by_Material_2['Standard Deviation'] = pd.cut(outbound_by_Material_2['StandardDeviation'], bins=bins, labels=labels, right=False)
+        grouped_data2 = outbound_by_Material_2.groupby(['percentile_bin','Standard Deviation'])['PKT real'].sum().reset_index()
+        grouped_data2['percentage_sales']=round((grouped_data2['PKT real']/sum(grouped_data2['PKT real']))*100,2)
+        grouped_data2['Rank'] = grouped_data2['percentage_sales'].rank(ascending=False)
+        grouped_data2=grouped_data2.sort_values(by=['percentage_sales'],ascending=True)
+        #grouped_data2 = grouped_percentil.groupby(['percentile_bin','Standard Deviation'])['PKT real'].sum().reset_index()
+        metric_use='percentage_sales'
+        field1_use='percentile_bin'
+        field2_use='Standard Deviation_'
 
 
-    #     col_to_use1 = 'percentage_sales'
-    #     pivot_final_data = grouped_data2.pivot(
-    #     index=['percentile_bin'],
-    #     columns=['Standard Deviation'],
-    #     values=[col_to_use1]
-    #     ).reset_index()
+        col_to_use1 = 'percentage_sales'
+        pivot_final_data = grouped_data2.pivot(
+        index=['percentile_bin'],
+        columns=['Standard Deviation'],
+        values=[col_to_use1]
+        ).reset_index()
 
-    #     pivot_final_data.rename(columns = {'percentage_sales':''}, inplace = True) 
-    #     pivot_final_data.rename(columns = {field1_use:'percentile_bin'}, inplace = True) 
-    #     pivot_final_data.columns = pivot_final_data.columns.map(''.join)
-    #     percent_inbound=pivot_final_data
-    #     percent_inbound
-    #     plot_abc_xyz(percent_inbound)
+        pivot_final_data.rename(columns = {'percentage_sales':''}, inplace = True) 
+        pivot_final_data.rename(columns = {field1_use:'percentile_bin'}, inplace = True) 
+        pivot_final_data.columns = pivot_final_data.columns.map(''.join)
+        percent_inbound=pivot_final_data
+        percent_inbound
+        plot_abc_xyz(percent_inbound)
 if __name__ == "__main__":
     main()
