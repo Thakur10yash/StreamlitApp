@@ -27,34 +27,30 @@ outbound = pd.read_csv('outbound_final_compresed.csv')
 
 # outbound['PKT real']=outbound['PKT real'].round().astype(int)
 # outbound['Material']=outbound['Material'].astype(str)
-def create_percentile_bins(df, column_name,n, bin_labels=None):
+def create_percentile_bins(df, column_name, bin_labels=['C', 'B', 'A']):
     """
     Adds a new column to the DataFrame categorizing the specified column into percentile bins.
     
     Parameters:
     - df: pandas DataFrame.
     - column_name: String. The name of the column to bin.
-    - n: Integer. Number of bins excluding the top bin.
     - bin_labels: List of strings. Labels for the bins.
     
     Returns:
     - DataFrame with a new column 'percentile_bin'.
     """
-    # Ensure the column exists in the DataFrame
     if column_name not in df.columns:
         raise ValueError(f"Column '{column_name}' not found in DataFrame.")
     
     # Calculate percentiles
-    top_percentile = 0.2
-    top_value = df[column_name].quantile(1 - top_percentile)
-    remaining_percentiles = [(i + 1) / (n + 1) for i in range(n-1)]
-    remaining_values = df[column_name][df[column_name] <= top_value].quantile(remaining_percentiles)
-
-    # Combine top bin and remaining bins
-    bins = [df[column_name].min() - 1] + remaining_values.tolist() + [df[column_name].max()]
-
-    # Use pd.cut to categorize the values into bins
-    df['percentile_bin'] = pd.cut(df[column_name], bins=bins, labels=[f'Bucket {i}' for i in range(n,0,-1)], include_lowest=True)
+    p50 = df[column_name].quantile(0.50)
+    p75 = df[column_name].quantile(0.75)
+    
+    # Define bins with updated thresholds
+    bins = [df[column_name].min() - 1, p50, p75, df[column_name].max()]
+    
+    # Categorize the values into bins using pd.cut
+    df['percentile_bin'] = pd.cut(df[column_name], bins=bins, labels=bin_labels, include_lowest=True)
     
     return df
 #print(outbound['StandardDeviation'].min(),outbound['StandardDeviation'].max())
@@ -467,7 +463,7 @@ def main():
         
         #outbound['StandardDeviation'] = outbound.groupby('Material')['PKT real'].transform('std')
         outbound_by_Material_2 = outbound.groupby(['Material']).agg({'PKT real':'sum', 'StandardDeviation':'mean'}).reset_index()
-        outbound_by_Material_2=create_percentile_bins(outbound_by_Material_2,'PKT real',bin_size)
+        outbound_by_Material_2=create_percentile_bins(outbound_by_Material_2,'PKT real')
         outbound_by_Material_2['Percent']=round((outbound_by_Material_2['PKT real']/sum(outbound_by_Material_2['PKT real']))*100,2)
         outbound_by_Material_2=outbound_by_Material_2.sort_values(by=('Percent'),ascending=False)
         outbound_by_Material_2['StandardDeviation']=round(outbound_by_Material_2['StandardDeviation'],2)
